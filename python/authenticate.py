@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import sys
 import face_recognition as fr
+import cv2
 
 train_dir = 'train.dat'
 
@@ -14,7 +15,7 @@ def authenticate(path):
     unknown_encode = fr.face_encodings(unknown_image);
 
     if not unknown_encode:
-        return (0, 'No face detected')
+        return (1, 'No face detected')
 
     unknown_encode = unknown_encode[0]
 
@@ -31,12 +32,24 @@ def authenticate(path):
         poll[name][1] += 1
 
     if total_vote < 5:
-        return (0, 'Not enough vote')
+        return (2, 'Not enough vote')
 
     #print(poll)
 
     for name, [vote, total] in poll.items():
         if float(vote)/total > 0.5 and float(vote)/total_vote > 0.8:
-            return (1, name)
+            return (0, name)
             
-    return (0, 'No consistent candidate')
+    return (3, 'No consistent candidate')
+
+
+def cut_face(path):
+    image = fr.load_image_file(path)
+    box = fr.face_locations(image)[0]
+
+    img = cv2.imread(path)
+
+    print(box)
+    crop_img = img[box[0]:box[2], box[3]:box[1]]
+    cv2.imwrite("cropped.jpg", crop_img)
+
