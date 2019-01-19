@@ -16,9 +16,9 @@ import hmac
 import hashlib
 
 # Config for GiGA Genie gRPC
-CLIENT_ID = ''
-CLIENT_KEY = ''
-CLIENT_SECRET = ''
+CLIENT_ID = 'Y2xpZW50X2lkMTU0NzgyNzI3NDczMA=='
+CLIENT_KEY = 'Y2xpZW50X2tleTE1NDc4MjcyNzQ3MzA='
+CLIENT_SECRET = 'Y2xpZW50X3NlY3JldDE1NDc4MjcyNzQ3MzA='
 HOST = 'gate.gigagenie.ai'
 PORT = 4080
 
