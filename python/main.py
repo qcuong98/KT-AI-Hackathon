@@ -17,13 +17,18 @@ TRY_LIMIT = 3
 PASSWORD = 'never'
 UNKNOWN_PATH = 'unknown.jpg'
 
+cnt_attempt = 0
+
 def login_by_password():
+    global cnt_attempt
+    cnt_attempt += 1
     # do you want to enter password
     gkit.tts_play('암호를 입력 하시겠습니까')
     text = gkit.getVoice2Text()
     print(text)
     # yes
-    if (text.find('예') >= 0 or text.find('yes') >= 0):
+    if (cnt_attempt % 3 != 0):
+    # if (text.find('예') >= 0 or text.find('yes') >= 0):
         # input plz
         gkit.tts_play('환영')
         for no_try in range(TRY_LIMIT):
