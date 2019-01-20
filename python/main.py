@@ -10,9 +10,12 @@ from firebase_admin import credentials, db
 import datetime
 import urllib
 import json
+import pyaudio
+import wave
 
 TRY_LIMIT = 3
 PASSWORD = 'never'
+UNKNOWN_PATH = 'unknown.jpg'
 
 def login_by_password():
     # do you want to enter password
@@ -20,13 +23,13 @@ def login_by_password():
     text = gkit.getVoice2Text()
     print(text)
     # yes
-    if (text.find('예') >= 0):
+    if (text.find('예') >= 0 or text.find('yes') >= 0):
         # input plz
         gkit.tts_play('환영')
         for no_try in range(TRY_LIMIT):
             password = gkit.getVoice2Text()
             print(password)
-            if (password.find(PASSWORD) >= 0 and len(password) <= 3 * len(PASSWORD)):
+            if (password.find(PASSWORD) >= 0 and len(password) <= 5 * len(PASSWORD)):
                 # welcome
                 # gkit.tts_play('환영')
                 return 1
@@ -59,11 +62,6 @@ def upload_file(img_name, log_id):
         return result["downloadTokens"]
 
 def detect_person(detected):
-    cred = credentials.Certificate('you-shall-not-pass-c59f3-firebase-adminsdk-kzw1y-e5ebf0cbfc.json')
-    app = firebase_admin.initialize_app(cred, {
-        'databaseURL' : 'https://you-shall-not-pass-c59f3.firebaseio.com/'
-    })
-
     root = db.reference()
     
     if (not detected):
@@ -78,15 +76,42 @@ def detect_person(detected):
             'timestamp': str(datetime.datetime.now()),
             'message': 'Door opened'
         })
-    log_id = new_log.key
+    
+    if os.path.isfile(UNKNOWN_PATH):
+        auth.cut_face(UNKNOWN_PATH)
+        log_id = new_log.key
 
-    token = upload_file("cropped.jpg", log_id)
-    url = 'https://firebasestorage.googleapis.com/v0/b/you-shall-not-pass-c59f3.appspot.com/o/images%2F' + log_id + '?alt=media&token=' + token
+        token = upload_file("cropped.jpg", log_id)
+        url = 'https://firebasestorage.googleapis.com/v0/b/you-shall-not-pass-c59f3.appspot.com/o/images%2F' + log_id + '?alt=media&token=' + token
 
-    new_log.update({
-        'image': url
-    })
+        new_log.update({
+            'image': url
+        })
 
+def play_file(fname):
+    # create an audio object
+    wf = wave.open(fname, 'rb')
+    p = pyaudio.PyAudio()
+    chunk = 1024
+
+    # open stream based on the wave object which has been input.
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+
+    # read data (based on the chunk size)
+    data = wf.readframes(chunk)
+
+    # play stream (looping from beginning of file to the end)
+    while len(data) > 0:
+        # writing to the stream is what *actually* plays the sound.
+        stream.write(data)
+        data = wf.readframes(chunk)
+
+        # cleanup stuff.
+    stream.close()
+    p.terminate() 
 
 
 # return true if detected
@@ -98,7 +123,6 @@ def face_detect():
 
     detected = False
 
-    UNKNOWN_PATH = 'unknown.jpg'
     TEMP_PATH = 'tmp.jpg'
 
     while True:
@@ -132,24 +156,33 @@ def face_detect():
             detected = True
         # do not want to input password
         elif (val == 0):
+            # you shall not pass
+            gkit.tts_play('너는지나 가지 않아야한다.')
             return detected
 
-    if os.path.isfile(UNKNOWN_PATH):
-        auth.cut_face(UNKNOWN_PATH)
-        detect_person(detected)
+    detect_person(detected)
 
     if detected:
+        play_file('../data/sample_sound.wav')
         # Play a welcome sound
         gkit.tts_play('환영')
         print('Door open')
-            
-
-    return detected
+        return True
+    
+    # you have tried ur best. good luck on next time
+    gkit.tts_play('다음 번에 최선을 다해 행운을 빕니다.')
+    return False
 
 def main():
     print(face_detect())
 
 if (__name__ == '__main__'):
     print('Library loaded')
+
+    cred = credentials.Certificate('you-shall-not-pass-c59f3-firebase-adminsdk-kzw1y-e5ebf0cbfc.json')
+    app = firebase_admin.initialize_app(cred, {
+        'databaseURL' : 'https://you-shall-not-pass-c59f3.firebaseio.com/'
+    })
+
     gkit.get_button().on_press(main)
     input('Press enter to stop\n\n')
